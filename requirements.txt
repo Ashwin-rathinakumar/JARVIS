@@ -1,0 +1,13 @@
+google-genai
+python-dotenv
+requests
+pypdf
+fastapi
+uvicorn
+sounddevice
+numpy
+pyttsx3
+faster-whisper
+psutil
+pystray
+Pillow

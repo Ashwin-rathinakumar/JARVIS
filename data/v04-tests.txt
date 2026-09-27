@@ -1,0 +1,17 @@
+invalid pdf header: b'NOT A'
+EOF marker not found
+incorrect startxref pointer(1)
+parsing for Object Streams
+incorrect startxref pointer(1)
+parsing for Object Streams
+incorrect startxref pointer(1)
+parsing for Object Streams
+incorrect startxref pointer(1)
+parsing for Object Streams
+----------------------------------------------------------------------
+Ran 181 tests in 41.931s
+
+OK
+[TTS ERROR] Response could not be spoken (1 consecutive failures). See logs/jarvis.log.
+[TTS ERROR] Response could not be spoken (2 consecutive failures). See logs/jarvis.log.
+[TTS ERROR] Response could not be spoken (1 consecutive failures). See logs/jarvis.log.

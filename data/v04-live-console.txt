@@ -1,0 +1,48 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260923234308
+Username: LAPTOP-28UC97DU\Ashwin Rathinakumar
+RunAs User: LAPTOP-28UC97DU\Ashwin Rathinakumar
+Configuration Name: 
+Machine: LAPTOP-28UC97DU (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoExit -File C:\JARVIS\scripts\verify_voice_session.ps1
+Process ID: 16708
+PSVersion: 5.1.26100.9444
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9444
+BuildVersion: 10.0.26100.9444
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\JARVIS\data\v04-live-console.txt
+JARVIS v0.4 continuous microphone verification
+Use ONE session. ENTER starts recording; ENTER stops recording.
+Wait for the spoken response before starting the next command.
+1. Give me system information
+2. Open Streetlight
+3. Close Streetlight
+4. Open Sentinel AI
+5. Close Sentinel AI
+6. Open K E E R
+7. Close K E E R
+8. Give me system information
+After command 8, type q at the prompt and report whether you heard all eight responses.
+JARVIS: Operating System: Windows
+OS Version: 10.0.26200
+Release: 11
+Architecture: AMD64
+Processor: Intel64 Family 6 Model 154 Stepping 4, GenuineIntel
+Computer Name: LAPTOP-28UC97DU
+Python Version: 3.12.10
+Working Directory: C:\JARVIS
+Disk Space: 177.9 GB free of 475.7 GB
+CPU Cores: 12
+
+[ENTER to speak, 'q' to quit]: q
+Exiting JARVIS Voice Mode.
+**********************
+Windows PowerShell transcript end
+End time: 20260923234715
+**********************
