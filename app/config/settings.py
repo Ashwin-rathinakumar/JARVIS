@@ -110,3 +110,7 @@ JARVIS_TTS_ENABLED = os.getenv("JARVIS_TTS_ENABLED", "true").lower() in {"true",
 JARVIS_TTS_RATE = int(os.getenv("JARVIS_TTS_RATE", "180"))
 JARVIS_TTS_VOLUME = float(os.getenv("JARVIS_TTS_VOLUME", "1.0"))
 JARVIS_SAMPLE_RATE = int(os.getenv("JARVIS_SAMPLE_RATE", "16000"))
+JARVIS_WAKE_PROVIDER = os.getenv("JARVIS_WAKE_PROVIDER", "disabled").lower()
+JARVIS_WAKE_PHRASES = tuple(p.strip() for p in os.getenv("JARVIS_WAKE_PHRASES", "hey jarvis,okay jarvis,jarvis").split(",") if p.strip())
+JARVIS_WAKE_WINDOW_SECONDS = float(os.getenv("JARVIS_WAKE_WINDOW_SECONDS", "2.0"))
+JARVIS_FOLLOW_UP_SECONDS = float(os.getenv("JARVIS_FOLLOW_UP_SECONDS", "10.0"))

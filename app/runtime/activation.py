@@ -1,9 +1,25 @@
 """Vendor-neutral wake-word and voice-activity interfaces."""
 from abc import ABC, abstractmethod
 from collections import deque
+import re
 from threading import Event
 from typing import Deque
 
+
+class WakeWordDetector:
+    """Match a wake phrase at the start of an STT transcript, preserving a command."""
+
+    def __init__(self, phrases=("hey jarvis", "okay jarvis", "jarvis")):
+        normalized = [r"[\s,.:;!?-]+".join(re.escape(part) for part in phrase.lower().split())
+                      for phrase in phrases if phrase.strip()]
+        if not normalized:
+            raise ValueError("At least one wake phrase is required")
+        self._pattern = re.compile(r"^\s*(?:" + "|".join(sorted(normalized, key=len, reverse=True)) +
+                                   r")\b[\s,.:;!?-]*(.*)$", re.IGNORECASE)
+
+    def extract_command(self, transcript: str):
+        match = self._pattern.match(transcript or "")
+        return match.group(1).strip() if match else None
 
 class WakeWordProvider(ABC):
     @abstractmethod
@@ -12,6 +28,39 @@ class WakeWordProvider(ABC):
 
     def shutdown(self) -> None:
         pass
+
+
+class TranscriptWakeWordProvider(WakeWordProvider):
+    """CPU/STT based wake adapter; records short windows without keyboard input."""
+
+    continuous = True
+
+    def __init__(self, microphone, stt, phrases, window_seconds: float = 2.0):
+        self.microphone = microphone
+        self.stt = stt
+        self.detector = WakeWordDetector(phrases)
+        self.window_seconds = window_seconds
+        self._command = None
+        self._closed = False
+
+    def wait_for_wake(self, timeout: float) -> bool:
+        if self._closed:
+            return False
+        audio = self.microphone.capture_push_to_talk(duration=min(self.window_seconds, max(timeout, 0.1)))
+        if audio is None or self._closed:
+            return False
+        command = self.detector.extract_command(self.stt.transcribe(audio).text)
+        if command is None:
+            return False
+        self._command = command
+        return True
+
+    def take_command(self):
+        command, self._command = self._command, None
+        return command
+
+    def shutdown(self) -> None:
+        self._closed = True
 
 
 class DisabledWakeWordProvider(WakeWordProvider):

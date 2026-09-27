@@ -6,6 +6,12 @@
 
 ## Key Features
 
+### Wake session (v0.8.1)
+
+The optional transcript wake adapter listens in short microphone windows and matches configured phrases locally after Faster-Whisper transcription. Enable it in `.env` with `JARVIS_WAKE_PROVIDER=transcript`, then start `python -m app.main --runtime`. Say “Hey JARVIS” (or “Hey JARVIS, open Sentinel AI”). JARVIS acknowledges and listens for follow-up commands for ten seconds after each turn. “Run its tests” uses the project from the current wake session and requests confirmation before executing the registered test command. The window then returns to idle; the next command needs a wake phrase. Push-to-talk (`python -m app.voice`) remains available.
+
+`JARVIS_WAKE_PHRASES`, `JARVIS_WAKE_WINDOW_SECONDS`, and `JARVIS_FOLLOW_UP_SECONDS` tune the phrases and timing. This adapter runs STT on each listening window, so CPU usage and response latency depend on the local model. Wake detection and live microphone behavior still need validation on the Windows machine; the automated tests use synthetic transcripts. The default wake provider remains disabled until explicitly enabled.
+
 - **Local-First & Private**: Powered by local Ollama models (`qwen2.5:1.5b` for reasoning and `nomic-embed-text` for embeddings). No external cloud API keys required.
 - **Phase 3 Agentic Action & Permission Layer**:
   - **Bounded Task Planning**: Converts complex goals into structured, validated multi-step `ActionPlan` models bounded by `MAX_PLAN_STEPS` (6).

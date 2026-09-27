@@ -79,6 +79,15 @@ def classify_intent_deterministic(message: str) -> Optional[Dict[str, Any]]:
         proj = m.group(1).strip() if m.group(1) else None
         return {"intent": "tool", "tool": "project_status", "arguments": {"project_name": proj}}
 
+    # Registered test commands are executed only after the normal permission check.
+    m = re.fullmatch(r"(?:run|execute)\s+(?:the\s+)?tests\s+(?:for|of)\s+(.+?)[.!?]?", cleaned_command, re.IGNORECASE)
+    if m:
+        from app.projects.resolver import project_resolver
+        candidate = m.group(1).strip().rstrip(".!?")
+        resolved = project_resolver.resolve(candidate)
+        return {"intent": "tool", "tool": "run_project_tests",
+                "arguments": {"project": resolved.canonical_name if resolved.matched else candidate}}
+
     from app.projects.commands import parse_project_command
     from app.projects.resolver import project_resolver, normalize_project_name
     command = parse_project_command(text)

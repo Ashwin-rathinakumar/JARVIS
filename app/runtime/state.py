@@ -13,6 +13,7 @@ class RuntimeState(str, Enum):
     THINKING = "THINKING"
     EXECUTING = "EXECUTING"
     SPEAKING = "SPEAKING"
+    FOLLOW_UP = "FOLLOW_UP"
     ERROR = "ERROR"
     STOPPING = "STOPPING"
     STOPPED = "STOPPED"
@@ -31,12 +32,13 @@ class RuntimeStateMachine:
 
     _LEGAL = {
         RuntimeState.IDLE: {RuntimeState.LISTENING, RuntimeState.THINKING, RuntimeState.STOPPING, RuntimeState.ERROR},
-        RuntimeState.LISTENING: {RuntimeState.TRANSCRIBING, RuntimeState.IDLE, RuntimeState.ERROR, RuntimeState.STOPPING},
-        RuntimeState.TRANSCRIBING: {RuntimeState.THINKING, RuntimeState.IDLE, RuntimeState.ERROR, RuntimeState.STOPPING},
+        RuntimeState.LISTENING: {RuntimeState.TRANSCRIBING, RuntimeState.SPEAKING, RuntimeState.FOLLOW_UP, RuntimeState.IDLE, RuntimeState.ERROR, RuntimeState.STOPPING},
+        RuntimeState.TRANSCRIBING: {RuntimeState.THINKING, RuntimeState.FOLLOW_UP, RuntimeState.IDLE, RuntimeState.ERROR, RuntimeState.STOPPING},
         RuntimeState.THINKING: {RuntimeState.EXECUTING, RuntimeState.SPEAKING, RuntimeState.IDLE, RuntimeState.ERROR, RuntimeState.STOPPING},
         RuntimeState.EXECUTING: {RuntimeState.SPEAKING, RuntimeState.IDLE, RuntimeState.ERROR, RuntimeState.STOPPING},
-        RuntimeState.SPEAKING: {RuntimeState.IDLE, RuntimeState.ERROR, RuntimeState.STOPPING},
-        RuntimeState.ERROR: {RuntimeState.IDLE, RuntimeState.STOPPING},
+        RuntimeState.SPEAKING: {RuntimeState.IDLE, RuntimeState.FOLLOW_UP, RuntimeState.ERROR, RuntimeState.STOPPING},
+        RuntimeState.FOLLOW_UP: {RuntimeState.LISTENING, RuntimeState.THINKING, RuntimeState.IDLE, RuntimeState.ERROR, RuntimeState.STOPPING},
+        RuntimeState.ERROR: {RuntimeState.FOLLOW_UP, RuntimeState.IDLE, RuntimeState.STOPPING},
         RuntimeState.STOPPING: {RuntimeState.STOPPED},
         RuntimeState.STOPPED: set(),
     }
