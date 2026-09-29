@@ -262,7 +262,7 @@ def list_projects() -> str:
 # OPEN PROJECT
 # ---------------------------------------------------------
 
-def open_project(project_name: str = "", project_name_or_path: Optional[str] = None, application: str = "vscode") -> str:
+def open_project(project_name: str = "", project_name_or_path: Optional[str] = None, application: str = "vscode", track_default_session: bool = True) -> str:
     """
     Open a registered project or validated path in VS Code.
     """
@@ -326,7 +326,8 @@ def open_project(project_name: str = "", project_name_or_path: Optional[str] = N
         if not project_lifecycle.wait_until_open(project_key):
             return f"Failed to open {display_name}: {project_lifecycle.startup_failure(project_key)}"
 
-        session.set_current_project(project_key or display_name)
+        if track_default_session:
+            session.set_current_project(project_key or display_name)
         return f"Opened {display_name} in VS Code."
 
     except Exception as error:

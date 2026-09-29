@@ -47,6 +47,11 @@ def classify_intent_deterministic(message: str) -> Optional[Dict[str, Any]]:
     if not text:
         return None
 
+    from app.projects.git_commands import parse_git_command
+    git_command = parse_git_command(message)
+    if git_command:
+        return git_command
+
     # Normalize harmless command punctuation immediately following command verb (e.g. "Open, Sentinel AI project." -> "open sentinel ai project.")
     cleaned_command = re.sub(
         r"^(open|launch|start|run|stop|terminate|kill|inspect|status|analyze)\s*[,.:;]\s*",

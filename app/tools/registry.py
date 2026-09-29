@@ -25,6 +25,8 @@ from app.tools.system import (
     get_current_directory,
 )
 from app.tools.weather import get_weather
+from app.tools.git import git_status, git_commit, git_push, git_pull, git_commit_push, git_publish
+from app.tools.folders import project_folder, open_project_folder, open_folder, project_overview
 from app.tools.model import get_model_status
 from app.tools.agent_project import list_project_files, read_project_file, search_project_text, run_project_tests
 from app.tools.files import (
@@ -137,8 +139,17 @@ register_tool("open_application", "Applications", "Open an allowlisted applicati
 register_tool("close_application", "Applications", "Close a running application safely", close_application, RiskLevel.LOW)
 
 # --- Register Projects ---
+def _open_project_scoped(project_name: str = "", project_name_or_path: Optional[str] = None, application: str = "vscode"):
+    return open_project(project_name, project_name_or_path, application, track_default_session=False)
+
+register_tool("project_folder", "Projects", "Locate a project subfolder without opening it", project_folder)
+register_tool("open_project_folder", "Projects", "Open a folder inside a registered project in Explorer", open_project_folder)
+register_tool("project_overview", "Projects", "Read project manifests to identify its declared technology stack", project_overview)
+register_tool("open_folder", "Files", "Open a validated folder in Explorer", open_folder)
+for _git_function in (git_status, git_commit, git_push, git_pull, git_commit_push, git_publish):
+    register_tool(_git_function.__name__, "Projects", "Safe Git workflow for a registered project", _git_function)
 register_tool("close_project", "Projects", "Gracefully close a tracked project editor", close_project, RiskLevel.LOW)
-register_tool("open_project", "Projects", "Open a project directory in VS Code", open_project, RiskLevel.LOW)
+register_tool("open_project", "Projects", "Open a project directory in VS Code", _open_project_scoped, RiskLevel.LOW)
 register_tool("search_projects", "Projects", "Search for project directories and candidates", search_projects, RiskLevel.READ_ONLY)
 register_tool("inspect_project", "Projects", "Inspect project structure and tech stack", inspect_project, RiskLevel.READ_ONLY)
 register_tool("run_project", "Projects", "Run a registered project in the background", run_project, RiskLevel.MEDIUM)
@@ -240,6 +251,9 @@ def execute_tool(tool_name: str, arguments: dict) -> ToolResult:
         if tool_name == "open_project" and not msg.startswith("Opened "):
             return ToolResult(success=False, tool=tool_name, message=msg, data=data,
                               error_code="PROJECT_OPEN_FAILED", error=msg)
+        if msg.startswith(("Project directory not found", "I don't know the project", "No run command is configured")):
+            return ToolResult(success=False, tool=tool_name, message=msg, data=data,
+                              error_code="PROJECT_ACTION_FAILED", error=msg)
 
         # Semantic check for access denied / error strings
         if msg.startswith("Access denied"):

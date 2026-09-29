@@ -122,6 +122,12 @@ class JarvisPlanner:
         """
         lower = goal.lower().strip()
 
+        # Git compound operations are bounded registered workflows, not free-form
+        # plans. Let the orchestrator bind project context and require approval.
+        from app.projects.git_commands import parse_git_command
+        if parse_git_command(goal):
+            return None
+
         # Pattern: "find (my) <project> (project) and open (it) in (vs )?code"
         m = re.match(
             r"^(?:find|locate|search\s+for)\s+(?:my\s+)?(?:the\s+)?(.+?)(?:\s+project)?\s+and\s+open\s+(?:it\s+)?(?:in\s+)?(?:vs\s+)?code(?:\.exe)?$",

@@ -7,6 +7,16 @@ from app.utils.logger import logger
 
 # Explicit Tool Risk Classifications
 TOOL_RISK_MAP: Dict[str, RiskLevel] = {
+    "project_folder": RiskLevel.READ_ONLY,
+    "project_overview": RiskLevel.READ_ONLY,
+    "open_project_folder": RiskLevel.LOW,
+    "open_folder": RiskLevel.LOW,
+    "git_status": RiskLevel.READ_ONLY,
+    "git_commit": RiskLevel.MEDIUM,
+    "git_push": RiskLevel.HIGH,
+    "git_pull": RiskLevel.MEDIUM,
+    "git_commit_push": RiskLevel.HIGH,
+    "git_publish": RiskLevel.HIGH,
     # READ_ONLY: Safe queries & introspection
     "system_information": RiskLevel.READ_ONLY,
     "cpu_info": RiskLevel.READ_ONLY,

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 JARVIS_NAME = "JARVIS"
-VERSION = "0.7"
+VERSION = "0.9"
 
 # Server Host and Port
 JARVIS_HOST = os.getenv("JARVIS_HOST", "127.0.0.1")
@@ -40,8 +40,9 @@ else:
 MAX_CONTEXT_MESSAGES = int(os.getenv("MAX_CONTEXT_MESSAGES", "10"))
 MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "6000"))
 
-# LLM Providers (Default to Ollama for local-first execution)
-LLM_PROVIDER = os.getenv("JARVIS_LLM_PROVIDER", os.getenv("LLM_PROVIDER", "ollama")).lower()
+# Optional LLM provider. Existing explicit/legacy settings remain supported.
+# Unconfigured, empty, 'none', or 'disabled' leaves local commands fully available.
+LLM_PROVIDER = os.getenv("JARVIS_LLM_PROVIDER", os.getenv("LLM_PROVIDER", "none")).strip().lower()
 JARVIS_LLM_BASE_URL = os.getenv("JARVIS_LLM_BASE_URL", "http://127.0.0.1:8000/v1").rstrip("/")
 JARVIS_LLM_MODEL = os.getenv("JARVIS_LLM_MODEL", "nvidia/nemotron")
 JARVIS_LLM_TIMEOUT = int(os.getenv("JARVIS_LLM_TIMEOUT", "45"))

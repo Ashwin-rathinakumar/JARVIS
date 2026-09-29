@@ -20,6 +20,11 @@ def execute_command(command: str, brain: Any = None) -> Optional[str]:
     if intent != "tool" or not tool:
         return None
 
+    if tool.startswith("git_"):
+        # Legacy callers must use the same confirmation boundary as voice/API.
+        from app.brain.orchestrator import JarvisOrchestrator
+        return JarvisOrchestrator(brain=brain).process(command, session_id=session.session_id).response
+
     # Handle tools requiring optional brain dependency
     if tool == "ask_documents" and brain is not None:
         arguments["brain"] = brain

@@ -61,8 +61,8 @@ class VoiceRuntime:
             self.tts_failures += 1
             logger.error("[TTS ERROR] consecutive_failures=%d recovery=next_utterance", self.tts_failures)
             print(f"[TTS ERROR] Response could not be spoken ({self.tts_failures} consecutive failures). See logs/jarvis.log.")
-        logger.info("Voice output intent=%s tool=%s success=%s TTS_attempted=true TTS_completed=%s response=%r",
-                    response.intent, response.tool_used, response.success, self.last_tts_succeeded, response.response)
+        logger.info("Voice output intent=%s tool=%s success=%s TTS_attempted=true TTS_completed=%s",
+                    response.intent, response.tool_used, response.success, self.last_tts_succeeded)
         return response
 
     def handle_transcript(self, raw_transcript: str) -> ChatResponse:
@@ -90,51 +90,7 @@ class VoiceRuntime:
                 session_id=self.session_id,
             )
 
-        logger.info(f"[VoiceRuntime] Handling transcript: '{text}' (session={self.session_id})")
-        session: SessionState = session_manager.get_session(self.session_id)
-        lower = re.sub(r"[.!?,]+$", "", text.lower()).strip()
-
-        # Check if there is an active pending confirmation
-        if session.pending_plan and session.pending_confirmation_id:
-            token = session.pending_confirmation_id
-            # Verify if token is still valid in confirmation manager
-            token_details = confirmation_manager.get_confirmation(token)
-            if not token_details:
-                # Expired or invalid token
-                session.pending_plan = None
-                session.pending_confirmation_id = None
-                msg = "That confirmation request has expired. Please issue the command again."
-                return ChatResponse(
-                    success=False,
-                    intent="system",
-                    response=msg,
-                    session_id=self.session_id,
-                    error="CONFIRMATION_EXPIRED",
-                )
-
-            # Check normalized confirmation response
-            if lower in CONFIRMATION_YES_PHRASES:
-                logger.info("[VoiceRuntime] Voice user confirmed pending action.")
-                response = self.orchestrator.process("y", session_id=self.session_id, source="voice")
-            elif lower in CONFIRMATION_NO_PHRASES:
-                logger.info("[VoiceRuntime] Voice user cancelled pending action.")
-                response = self.orchestrator.process("n", session_id=self.session_id, source="voice")
-            else:
-                # Ambiguous response -> do NOT execute or cancel, request clear response
-                logger.info(f"[VoiceRuntime] Ambiguous confirmation response: '{text}'")
-                msg = "I didn't receive a clear confirmation. Say yes to continue or no to cancel."
-                return ChatResponse(
-                    success=True,
-                    intent="system",
-                    response=msg,
-                    session_id=self.session_id,
-                    status="confirmation_required",
-                    confirmation_id=token,
-                )
-        else:
-            # Normal command processing
-            response = self.orchestrator.process(text, session_id=self.session_id, source="voice")
-        return response
+        return self.orchestrator.process(text, session_id=self.session_id, source="voice")
 
     def listen_and_process(self, duration: Optional[float] = None) -> ChatResponse:
         # Capture, transcription and playback cannot overlap even if called by

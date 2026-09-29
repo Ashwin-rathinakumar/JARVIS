@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 
 from app.config.settings import DATABASE_PATH
 from app.core.schemas import AuditRecord
-from app.utils.logger import logger
+from app.utils.logger import logger, redact_secrets
 
 
 def _get_connection() -> sqlite3.Connection:
@@ -49,14 +49,14 @@ def sanitize_arguments(arguments: Dict[str, Any]) -> str:
     """Sanitize arguments by redacting potential passwords, tokens, or huge content."""
     sanitized = {}
     for k, v in arguments.items():
-        if any(secret in k.lower() for secret in ["password", "token", "key", "secret"]):
+        if k in {"content", "text"} or any(secret in k.lower() for secret in ["password", "token", "key", "secret"]):
             sanitized[k] = "[REDACTED]"
         elif isinstance(v, str) and len(v) > 200:
             sanitized[k] = v[:100] + "... [truncated]"
         else:
             sanitized[k] = v
     try:
-        return json.dumps(sanitized)
+        return redact_secrets(json.dumps(sanitized))
     except Exception:
         return str(sanitized)
 
@@ -77,6 +77,8 @@ def record_audit(
     """Record an action audit entry in SQLite."""
     init_audit_table()
     args_summary = sanitize_arguments(arguments)
+    message = ("Content returned; omitted from audit." if tool in {"read_text_file", "read_project_file", "search_project_text", "ask_documents"}
+               else redact_secrets(message) if message is not None else None)
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     conn = _get_connection()

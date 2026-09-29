@@ -15,6 +15,24 @@ class ConversationContext:
     last_project: Optional[str] = None
     last_location: Optional[str] = None
     last_entities: Dict[str, str] = field(default_factory=dict)
+    active_path: Optional[str] = None
+    active_repository: Optional[str] = None
+    previous_project: Optional[str] = None
+    last_action: Optional[str] = None
+    last_result: Dict[str, Any] = field(default_factory=dict)
+    last_entity: Optional[str] = None
+    recent_entities: List[str] = field(default_factory=list)
+
+    @property
+    def active_project(self):
+        return self.last_project
+
+    def snapshot(self):
+        return {"active_project": self.last_project, "active_path": self.active_path,
+                "active_repository": self.active_repository, "previous_project": self.previous_project,
+                "last_tool": self.last_tool, "last_action": self.last_action,
+                "last_result": self.last_result, "last_entity": self.last_entity,
+                "recent_entities": self.recent_entities[-5:]}
 
     def record(self, intent: Optional[str], tool: Optional[str], arguments: Optional[Dict[str, Any]] = None) -> None:
         self.last_intent = intent
@@ -23,11 +41,60 @@ class ConversationContext:
         project = arguments.get("project_name") or arguments.get("project_name_or_path")
         location = arguments.get("location")
         if project:
+            if self.last_project and self.last_project != str(project):
+                self.previous_project = self.last_project
             self.last_project = str(project)
             self.last_entities["project"] = self.last_project
         if location:
             self.last_location = str(location)
             self.last_entities["location"] = self.last_location
+
+    def observe(self, tool, arguments, result):
+        """Only successful results promote entities into working context."""
+        if not result.success:
+            return
+        from app.config.projects import PROJECTS, resolve_project_key
+        args = dict(arguments)
+        old_project = self.last_project
+        project = args.get("project_name") or args.get("project_name_or_path") or args.get("project")
+        if not project and tool in {"inspect_project", "project_overview"}:
+            project = args.get("path_or_name")
+        key = resolve_project_key(project) if project else None
+        if key:
+            args["project_name"] = PROJECTS[key].get("name", key)
+        self.record("project" if project else "tool", tool, args)
+        self.last_action = tool
+        data = result.data if isinstance(result.data, dict) else {}
+        # Never forward arbitrary file contents, credentials or environment output.
+        if tool in {"read_text_file", "read_project_file", "ask_documents", "search_project_text"}:
+            self.last_result = {"success": True, "message": "Requested content was returned; it is not retained in working context."}
+        else:
+            self.last_result = {"success": True, "message": result.message[:3500]}
+            for name in ("branch", "staged", "modified", "untracked", "remotes", "stack", "path"):
+                if name in data:
+                    value = data[name]
+                    self.last_result[name] = [str(x)[:300] for x in value[:40]] if isinstance(value, list) else str(value)[:1000] if value is not None else None
+        if key and (tool == "open_project" or old_project != self.last_project):
+            from pathlib import Path
+            self.active_path = str(Path(PROJECTS[key]["path"]).resolve())
+            self.last_entity = "project"
+        if tool.startswith("git_"):
+            self.active_repository = self.last_project
+        elif key and old_project != self.last_project:
+            self.active_repository = None
+        if tool in {"open_folder", "project_folder", "open_project_folder"} and data.get("path"):
+            self.active_path = data["path"]
+            self.last_entity = "folder"
+        entity = self.last_project if key else self.active_path if tool == "open_folder" else None
+        if entity:
+            self.recent_entities = [x for x in self.recent_entities if x != entity][-4:] + [entity]
+
+
+def observe_tool_result(session_id, tool, arguments, result):
+    active = session_manager.get_session(session_id)
+    active.conversation_context.observe(tool, arguments, result)
+    if result.success and active.conversation_context.last_project:
+        active.set_current_project(active.conversation_context.last_project)
 
 
 class SessionState:

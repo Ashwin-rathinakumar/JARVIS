@@ -6,6 +6,20 @@
 
 ## Key Features
 
+### Contextual reasoning (v0.9)
+
+JARVIS supports optional, provider-neutral semantic reasoning. Clear
+commands and contextual references use local deterministic routes; with a configured
+model, additional natural variants use a validated JSON
+decision before the existing planner and permissions. Project, repository, folder
+and recent-result context stay scoped to the conversation. Text and voice share
+the same pipeline, including questions and corrections during pending confirmation.
+
+Try “Open Streetlight”, “Check its git status”, “What does that mean?”, and
+“Commit those changes as fix API”. The commit still requires confirmation.
+See [contextual reasoning and the manual test conversation](docs/CONTEXTUAL_REASONING.md)
+for provider behavior, supported capabilities and safety limits.
+
 ### Wake session (v0.8.1)
 
 The optional transcript wake adapter listens in short microphone windows and matches configured phrases locally after Faster-Whisper transcription. Enable it in `.env` with `JARVIS_WAKE_PROVIDER=transcript`, then start `python -m app.main --runtime`. Say “Hey JARVIS” (or “Hey JARVIS, open Sentinel AI”). JARVIS acknowledges and listens for follow-up commands for ten seconds after each turn. “Run its tests” uses the project from the current wake session and requests confirmation before executing the registered test command. The window then returns to idle; the next command needs a wake phrase. Push-to-talk (`python -m app.voice`) remains available.
@@ -169,3 +183,16 @@ instances even while existing editor windows continue working. Finish the update
 before retrying. An exited or unready launcher is reported as a failure.
 
 See `V04_RUNTIME_REPORT.md` for verification results and remaining limitations.
+
+## Safe Git/GitHub project workflows
+
+Say `Check the git status of the Streetlight project`, then
+`Commit the changes as fix complaint endpoint`, then `Push it to GitHub`.
+Git commands retain the selected project within the conversation. Status is
+read-only; commit, pull and publication require the existing confirmation flow.
+Reply `yes` to approve or `no` to cancel.
+
+`Upload JARVIS to GitHub` commits if needed and pushes to an existing GitHub remote.
+Missing remotes produce explicit setup/authentication guidance; automatic GitHub
+repository creation is not implemented. General Git questions remain conversational.
+See [the Git workflow guide](docs/GIT_WORKFLOW.md) for commands, protections and limits.

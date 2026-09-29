@@ -211,6 +211,9 @@ class AgentExecutor:
                 return plan, observations, summary
 
             # Succeeded
+            if not is_dry_run:
+                from app.state.session import observe_tool_result
+                observe_tool_result(session_id or plan.session_id, step.tool, resolved_args, result)
             step.status = StepStatus.COMPLETED
             step.result = result.data or result.message
             step_outputs[step.id] = result.data if result.data is not None else {"result": result.message}
@@ -253,4 +256,3 @@ class AgentExecutor:
             confirmed_step_id=confirmed_step_id,
             dry_run=dry_run,
         )
-

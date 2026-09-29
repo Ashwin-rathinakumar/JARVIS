@@ -57,16 +57,7 @@ class JarvisRuntime:
         logger.info("Runtime state transition=%s reason=%s", state.value, reason)
 
     def _contextualize(self, transcript: str) -> str:
-        text = (transcript or "").strip()
-        context = session_manager.get_session(self.session_id).conversation_context
-        lower = re.sub(r"[.!?]+$", "", text.lower()).strip()
-        if context.last_location and lower in {"what about tomorrow", "and tomorrow", "tomorrow"}:
-            return f"weather in {context.last_location} tomorrow"
-        if context.last_project and re.fullmatch(r"(?:close|stop)\s+it", lower):
-            return f"close {context.last_project}"
-        if context.last_project and re.fullmatch(r"(?:run|execute)\s+(?:its|the)\s+tests", lower):
-            return f"run tests for {context.last_project}"
-        return text
+        return (transcript or "").strip()
 
     def process_transcript(self, transcript: str, follow_up: bool = False) -> ChatResponse:
         """Process one text/STT turn without restarting the runtime."""
@@ -135,8 +126,8 @@ class JarvisRuntime:
                 break
         if self.state == RuntimeState.FOLLOW_UP:
             self._set_state(RuntimeState.IDLE, "follow_up_timeout")
-        session_manager.get_session(self.session_id).conversation_context.last_project = None
-        session_manager.get_session(self.session_id).conversation_context.last_location = None
+        # The wake window ends listening, not the conversation session. Keep its
+        # working context until the user selects another target or clears session.
 
     def _wake_loop(self) -> None:
         while not self._stop.is_set():

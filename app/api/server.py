@@ -165,63 +165,19 @@ def create_app(brain: Optional[JarvisBrain] = None) -> FastAPI:
     @app.post("/api/actions/{confirmation_id}/confirm", response_model=ChatResponse, tags=["Agentic Actions"])
     def confirm_action_endpoint(confirmation_id: str, session_id: Optional[str] = None):
         """Confirm a pending action step using its confirmation token."""
-        conf_details = confirmation_manager.consume_confirmation(confirmation_id)
-        if not conf_details:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Confirmation token expired or not found.",
-            )
-
         curr_session = session_manager.get_session(session_id)
-        plan = curr_session.pending_plan
-
-        if not plan:
-            # Reconstruct single-step plan
-            step = ActionStep(
-                id=conf_details.step_id,
-                tool=conf_details.tool,
-                arguments=conf_details.arguments,
-                description=conf_details.description,
-            )
-            plan = ActionPlan(
-                id=conf_details.plan_id,
-                goal=conf_details.description,
-                steps=[step],
-                created_at="now",
-                session_id=curr_session.session_id,
-            )
-
-        res_plan, obs_list, summary = orchestrator.executor.execute_plan(
-            plan,
-            session_id=curr_session.session_id,
-            confirmed_step_id=conf_details.step_id,
-        )
-
-        curr_session.pending_plan = None
-        curr_session.pending_confirmation_id = None
-
-        return ChatResponse(
-            success=(res_plan.status == ActionPlanStatus.COMPLETED),
-            intent="action_plan",
-            response=summary,
-            session_id=curr_session.session_id,
-            status=res_plan.status.value,
-            action_plan=res_plan,
-        )
+        if curr_session.pending_confirmation_id != confirmation_id or not confirmation_manager.get_confirmation(confirmation_id):
+            raise HTTPException(status_code=404, detail="No matching pending confirmation in this session.")
+        return orchestrator.process("yes", session_id=curr_session.session_id, source="api")
 
     @app.post("/api/actions/{confirmation_id}/cancel", tags=["Agentic Actions"])
     def cancel_action_endpoint(confirmation_id: str, session_id: Optional[str] = None):
         """Cancel a pending action confirmation."""
-        cancelled = confirmation_manager.cancel_confirmation(confirmation_id)
         curr_session = session_manager.get_session(session_id)
-        curr_session.pending_plan = None
-        curr_session.pending_confirmation_id = None
-
-        return {
-            "success": True,
-            "confirmation_id": confirmation_id,
-            "message": "Action cancelled." if cancelled else "Confirmation token was not active.",
-        }
+        if curr_session.pending_confirmation_id != confirmation_id:
+            raise HTTPException(status_code=404, detail="No matching pending confirmation in this session.")
+        response = orchestrator.process("no", session_id=curr_session.session_id, source="api")
+        return {"success": response.success, "confirmation_id": confirmation_id, "message": response.response}
 
     @app.get("/api/tools", response_model=List[ToolInfo], tags=["Tools"])
     def list_tools_endpoint():

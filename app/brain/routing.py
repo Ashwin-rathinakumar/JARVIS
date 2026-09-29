@@ -68,16 +68,65 @@ def parse_weather_request(message: str) -> Optional[WeatherRequest]:
     return WeatherRequest(location=location, when=when)
 
 
-def general_route_category(message: str) -> RouteCategory:
-    normalized = normalize_request_text(message).lower()
-    if re.match(r"^(?:what|who|why|how|when|where)\b", normalized) or re.match(
-        r"^(?:explain|describe|define|about|tell\s+me\s+about)\b", normalized
+def is_general_knowledge_request(message: str) -> bool:
+    """
+    Determine if a message is a general knowledge question, topic, concept,
+    algorithm, framework, technology, negation, or educational prompt.
+    """
+    text = normalize_request_text(message).strip()
+    if not text:
+        return False
+    lower = text.lower().rstrip(".!?").strip()
+
+    # 1. Negations & non-execution guard statements (e.g. "don't push", "do not delete", "never run")
+    if re.search(r"^(?:(?:please\s+)?(?:don'?t|do\s+not|never|shouldn'?t)\b)", lower):
+        return True
+
+    # 2. Explanatory & speculative question guards (e.g. "what happens if...", "why does...", "how does...", "what is...", "tell me about...")
+    if re.search(r"^(?:what\s+(?:happens\s+if|does|is|are)|how\s+does|why\s+(?:does|do)|explain\b|teach\s+me|tell\s+me\s+about)", lower):
+        if not re.search(r"\b(?:my\s+(?:operating\s+system|os|cpu|ram|memory|disk|laptop|pc|computer|current\s+project))\b", lower):
+            return True
+
+    # 3. System / local commands or status queries that match deterministic tools
+    if lower in {
+        "system info", "system information", "cpu info", "memory info", "disk info",
+        "python version", "model status", "current project", "active project",
+        "current directory", "pwd", "cwd", "list files", "git status"
+    } or re.search(r"^(?:system\s+info|git\s+status)$", lower) or re.search(r"\b(?:my|this)\s+(?:laptop|pc|computer|system|os|operating system|cpu|ram|memory|disk|drive|project|repo|directory|folder)\b", lower):
+        return False
+
+    # 4. Phrases containing active imperative command idioms (e.g. "fire up", "bring up", "work on", "let's work", "take me to", "send")
+    if re.search(
+        r"\b(?:fire\s+up|bring\s+up|work\s+on|let'?s\s+work|take\s+me|open|close|run|start|stop|kill|terminate|delete|remove|create|make|write|commit|push|pull|checkout|clone|build|send)\b",
+        lower
     ):
+        return False
+
+    # 5. General questions (what/who/why/how/when/where) without personal/system target anchors
+    if re.match(r"^(?:what|who|why|how|when|where)\b", lower) and not re.search(
+        r"\b(?:my|this|am i|do i|is installed|is running|are available)\b", lower
+    ):
+        return True
+
+    # 6. Short topic, concept, algorithm, or technology prompts (1-3 words)
+    # Must not contain target references / pronouns ("it", "that", "there", "somewhere")
+    words = lower.split()
+    if 1 <= len(words) <= 3:
+        if not any(w in {"it", "that", "this", "there", "them", "those", "here", "somewhere", "something", "anything"} for w in words):
+            return True
+
+    return False
+
+
+def general_route_category(message: str) -> RouteCategory:
+    if is_general_knowledge_request(message):
         return RouteCategory.GENERAL_KNOWLEDGE
     return RouteCategory.GENERAL_CHAT
 
 
 def category_for_tool(tool: str) -> RouteCategory:
+    if tool.startswith("git_"):
+        return RouteCategory.PROJECT_QUERY if tool == "git_status" else RouteCategory.PROJECT_ACTION
     if tool in {"open_project", "close_project", "run_project", "stop_project"}:
         return RouteCategory.PROJECT_ACTION
     if tool in {"list_projects", "current_project", "project_status", "search_projects", "inspect_project"}:

@@ -33,7 +33,7 @@ class ConfirmationManager:
             expires_at=expires_at,
         )
         self._pending[token] = details
-        logger.info(f"Created confirmation request [{token[:8]}] for step '{step_id}' ({tool})")
+        logger.info(f"Created confirmation request for step '{step_id}' ({tool})")
         return token
 
     def get_confirmation(self, confirmation_id: str) -> Optional[ConfirmationDetails]:
@@ -42,7 +42,7 @@ class ConfirmationManager:
         if not details:
             return None
         if time.time() > details.expires_at:
-            logger.info(f"Confirmation [{confirmation_id[:8]}] expired.")
+            logger.info("Confirmation expired.")
             del self._pending[confirmation_id]
             return None
         return details
@@ -52,7 +52,7 @@ class ConfirmationManager:
         details = self.get_confirmation(confirmation_id)
         if details:
             del self._pending[confirmation_id]
-            logger.info(f"Consumed confirmation [{confirmation_id[:8]}] for step '{details.step_id}'")
+            logger.info(f"Consumed confirmation for step '{details.step_id}'")
             return details
         return None
 
@@ -60,7 +60,7 @@ class ConfirmationManager:
         """Cancel a pending confirmation."""
         if confirmation_id in self._pending:
             del self._pending[confirmation_id]
-            logger.info(f"Cancelled confirmation [{confirmation_id[:8]}]")
+            logger.info("Cancelled confirmation")
             return True
         return False
 
